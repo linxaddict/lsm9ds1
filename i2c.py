@@ -34,6 +34,10 @@ i2c_bus_mag = I2C(1, ADDR_MAGNETIC_SENSOR)
 
 lsm9ds1 = LSM9DS1(i2c_bus_acc, i2c_bus_mag)
 
-while True:
-    print('acc: {:.2f} {:.2f} {:.2f}'.format(*lsm9ds1.read_acc()))
-    time.sleep(0.1)
+lsm9ds1.acc_range = lsm9ds1.AccRange.RANGE_2G
+acc_range = lsm9ds1.acc_range
+print('range: ', acc_range)
+
+# while True:
+#     print('acc: {:.2f} {:.2f} {:.2f}'.format(*lsm9ds1.read_acc()))
+#     time.sleep(0.1)

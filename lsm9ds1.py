@@ -149,6 +149,14 @@ class LSM9DS1:
         self._bus_mag.write_byte(Registers.CTRL_REG3_M.value, 0x00)
 
     def __init__(self, bus_acc: Bus, bus_mag: Bus):
+        self._accel_mg_lsb = None
+        self._mag_mgauss_lsb = None
+        self._gyro_dps_digit = None
+
+        self._acc_range = LSM9DS1.AccRange.RANGE_2G.value
+        self._mag_gain = LSM9DS1.MagGain.GAIN_4GAUSS.value
+        self._gyro_scale = LSM9DS1.GyroScale.SCALE_245DPS.value
+
         self._bus_acc = bus_acc
         self._bus_mag = bus_mag
 
@@ -159,6 +167,19 @@ class LSM9DS1:
 
         self._enable_continous_mode_acc()
         self._enable_continous_mode_mag()
+
+    @property
+    def acc_range(self):
+        reg = self._bus_acc.read_byte(Registers.CTRL_REG6_XL.value)
+        return (reg & 0x18) & 0xFF
+
+    @acc_range.setter
+    def acc_range(self, value):
+        reg = self.acc_range
+        reg = (reg & ~0x18) & 0xFF
+        reg |= value.value
+
+        self._bus_acc.write_byte(Registers.CTRL_REG6_XL.value, reg)
 
     def read_acc(self):
         value1 = self._bus_acc.read_bytes(0x80 | Registers.OUT_X_L_XL.value)
