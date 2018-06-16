@@ -131,9 +131,9 @@ class LSM9DS1:
         GAIN_16GAUSS = (0b11 << 5)
 
     class GyroScale(Enum):
-        SCALE_245DPS = (0b00 << 4)
-        SCALE_500DPS = (0b01 << 4)
-        SCALE_2000DPS = (0b11 << 4)
+        SCALE_245DPS = (0b00 << 3)
+        SCALE_500DPS = (0b01 << 3)
+        SCALE_2000DPS = (0b11 << 3)
 
     def _reset_acc(self):
         self._bus_acc.write_byte(Registers.CTRL_REG8.value, 0x05)
@@ -229,6 +229,36 @@ class LSM9DS1:
         gain |= value.value
 
         self._bus_mag.write_byte(Registers.CTRL_REG2_M.value, gain)
+
+    @property
+    def gyro_scale(self) -> GyroScale:
+        """
+        CTRL_REG1_G: ODR_G2 ODR_G1 ODR_G0 FS_G1 FS_G0 0 BW_G1 BW_G0
+
+        FS_G1 and FS_G0 are used to encode the scale.
+
+        :return: scale
+        """
+        scale = self._bus_acc.read_byte(Registers.CTRL_REG1_G.value)
+        return LSM9DS1.GyroScale((scale & 0x18) & 0xFF)
+
+    @gyro_scale.setter
+    def gyro_scale(self, value: GyroScale):
+        """
+        Sets new gyroscope scale.
+
+        CTRL_REG1_G: ODR_G2 ODR_G1 ODR_G0 FS_G1 FS_G0 0 BW_G1 BW_G0
+
+        FS_G1 and FS_G0 are used to encode the scale.
+
+        :param value: scale
+        """
+
+        scale = self._bus_acc.read_byte(Registers.CTRL_REG1_G.value)
+        scale = (scale & 0x18) & 0xFF
+        scale |= value.value
+
+        self._bus_acc.write_byte(Registers.CTRL_REG1_G.value, scale)
 
     def read_acc(self):
         value1 = self._bus_acc.read_bytes(0x80 | Registers.OUT_X_L_XL.value)

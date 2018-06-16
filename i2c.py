@@ -40,6 +40,9 @@ print('acc range: ', acc_range)
 mag_gain = lsm9ds1.mag_gain
 print('mag gain: ', mag_gain)
 
+gyro_scale = lsm9ds1.gyro_scale
+print('gyro scale: ', gyro_scale)
+
 while True:
     print('acc: {:.2f} {:.2f} {:.2f}'.format(*lsm9ds1.read_acc()))
     time.sleep(0.1)
