@@ -170,12 +170,29 @@ class LSM9DS1:
 
     @property
     def acc_range(self):
+        """
+        CTRL_REG6_XL: ODR_XL2 ODR_XL1 ODR_XL0 FS1_XL FS0_XL BW_SCAL _ODR BW_XL1 BW_XL0
+
+        FS1_XL and FS0_XL are used to encode accelerometer range.
+
+        :return: accelerometer range
+        """
         reg = self._bus_acc.read_byte(Registers.CTRL_REG6_XL.value)
         return (reg & 0x18) & 0xFF
 
     @acc_range.setter
     def acc_range(self, value):
-        reg = self.acc_range
+        """
+        Sets new accelerometer range.
+
+        CTRL_REG6_XL: ODR_XL2 ODR_XL1 ODR_XL   0 FS1_XL FS0_XL BW_SCAL _ODR BW_XL1 BW_XL0
+
+        FS1_XL and FS0_XL are used to encode the range.
+
+        :param value: range
+        """
+        reg = self._bus_acc.read_byte(Registers.CTRL_REG6_XL.value)
+
         reg = (reg & ~0x18) & 0xFF
         reg |= value.value
 
