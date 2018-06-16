@@ -168,6 +168,10 @@ class LSM9DS1:
         self._enable_continous_mode_acc()
         self._enable_continous_mode_mag()
 
+        self.acc_range = LSM9DS1.AccRange.RANGE_2G
+        self.gyro_scale = LSM9DS1.GyroScale.SCALE_245DPS
+        self.mag_gain = LSM9DS1.MagGain.GAIN_4GAUSS
+
     @property
     def acc_range(self) -> AccRange:
         """
