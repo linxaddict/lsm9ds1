@@ -2,8 +2,7 @@ import time
 
 import smbus
 
-from lsm9ds1 import I2C, LSM9DS1
-from registers import WHO_AM_I_M
+from lsm9ds1 import I2C, LSM9DS1, Registers
 
 DEVICE_1 = 0x1e
 DEVICE_2 = 0x6b
@@ -15,14 +14,14 @@ ADDR_ACCELEROMETER_GYRO = None
 ADDR_MAGNETIC_SENSOR = None
 
 bus = smbus.SMBus(1)    # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
-value = bus.read_byte_data(DEVICE_1, WHO_AM_I_M)
+value = bus.read_byte_data(DEVICE_1, Registers.WHO_AM_I_M.value)
 
 if value == DEVICE_ACCELEROMETER:
     ADDR_ACCELEROMETER = DEVICE_1
 else:
     ADDR_MAGNETIC_SENSOR = DEVICE_1
 
-value = bus.read_byte_data(DEVICE_2, WHO_AM_I_M)
+value = bus.read_byte_data(DEVICE_2, Registers.WHO_AM_I_M.value)
 
 if value == DEVICE_ACCELEROMETER:
     ADDR_ACCELEROMETER_GYRO = DEVICE_2
