@@ -169,7 +169,7 @@ class LSM9DS1:
         self._enable_continous_mode_mag()
 
     @property
-    def acc_range(self):
+    def acc_range(self) -> AccRange:
         """
         CTRL_REG6_XL: ODR_XL2 ODR_XL1 ODR_XL0 FS1_XL FS0_XL BW_SCAL _ODR BW_XL1 BW_XL0
 
@@ -177,26 +177,58 @@ class LSM9DS1:
 
         :return: accelerometer range
         """
-        reg = self._bus_acc.read_byte(Registers.CTRL_REG6_XL.value)
-        return (reg & 0x18) & 0xFF
+        acc_range = self._bus_acc.read_byte(Registers.CTRL_REG6_XL.value)
+        return LSM9DS1.AccRange((acc_range & 0x18) & 0xFF)
 
     @acc_range.setter
-    def acc_range(self, value):
+    def acc_range(self, value: AccRange):
         """
         Sets new accelerometer range.
 
-        CTRL_REG6_XL: ODR_XL2 ODR_XL1 ODR_XL   0 FS1_XL FS0_XL BW_SCAL _ODR BW_XL1 BW_XL0
+        CTRL_REG6_XL: ODR_XL2 ODR_XL1 ODR_XL 0 FS1_XL FS0_XL BW_SCAL _ODR BW_XL1 BW_XL0
 
         FS1_XL and FS0_XL are used to encode the range.
 
         :param value: range
         """
-        reg = self._bus_acc.read_byte(Registers.CTRL_REG6_XL.value)
 
-        reg = (reg & ~0x18) & 0xFF
-        reg |= value.value
+        acc_range = self._bus_acc.read_byte(Registers.CTRL_REG6_XL.value)
 
-        self._bus_acc.write_byte(Registers.CTRL_REG6_XL.value, reg)
+        acc_range = (acc_range & ~0x18) & 0xFF
+        acc_range |= value.value
+
+        self._bus_acc.write_byte(Registers.CTRL_REG6_XL.value, acc_range)
+
+    @property
+    def mag_gain(self) -> MagGain:
+        """
+        CTRL_REG2_M: 0 FS1 FS0 0 REBOOT SOFT_RST 0 0
+
+        FS1 and FS0 are used to encode the gain.
+
+        :return: gain
+        """
+
+        gain = self._bus_mag.read_byte(Registers.CTRL_REG2_M.value)
+        return LSM9DS1.MagGain((gain & 0x60) & 0xFF)
+
+    @mag_gain.setter
+    def mag_gain(self, value: MagGain):
+        """
+        Sets new magnetometer gain.
+
+        CTRL_REG2_M: 0 FS1 FS0 0 REBOOT SOFT_RST 0 0
+
+        FS1 and FS0 are used to encode the gain.
+
+        :param value: gain
+        """
+
+        gain = self._bus_mag.read_byte(Registers.CTRL_REG2_M.value)
+        gain = (gain & 0x60) & 0xFF
+        gain |= value.value
+
+        self._bus_mag.write_byte(Registers.CTRL_REG2_M.value, gain)
 
     def read_acc(self):
         value1 = self._bus_acc.read_bytes(0x80 | Registers.OUT_X_L_XL.value)
