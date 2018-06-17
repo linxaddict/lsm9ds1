@@ -45,4 +45,6 @@ print('gyro scale: ', gyro_scale)
 while True:
     print('acc: {:.2f} {:.2f} {:.2f}'.format(*lsm9ds1.read_acc()))
     print('mag: {:.2f} {:.2f} {:.2f}'.format(*lsm9ds1.read_mag()))
+    print('gyro: {:.2f} {:.2f} {:.2f}'.format(*lsm9ds1.read_gyro()))
+
     time.sleep(0.1)

@@ -147,6 +147,9 @@ class LSM9DS1:
         self._bus_acc.write_byte(Registers.CTRL_REG5_XL.value, 0x38)
         self._bus_acc.write_byte(Registers.CTRL_REG6_XL.value, 0xC0)
 
+    def _enable_continous_mode_gyro(self):
+        self._bus_acc.write_byte(Registers.CTRL_REG1_G.value, 0xC0)
+
     def _enable_continous_mode_mag(self):
         self._bus_mag.write_byte(Registers.CTRL_REG3_M.value, 0x00)
 
@@ -160,6 +163,7 @@ class LSM9DS1:
         time.sleep(0.01)
 
         self._enable_continous_mode_acc()
+        self._enable_continous_mode_gyro()
         self._enable_continous_mode_mag()
 
         self.acc_range = LSM9DS1.AccRange.RANGE_2G
@@ -178,6 +182,12 @@ class LSM9DS1:
             LSM9DS1.MagGain.GAIN_8GAUSS: 0.29,
             LSM9DS1.MagGain.GAIN_12GAUSS: 0.43,
             LSM9DS1.MagGain.GAIN_16GAUSS: 0.58
+        }
+
+        self._gyro_lsb_map = {
+            LSM9DS1.GyroScale.SCALE_245DPS: 0.00875,
+            LSM9DS1.GyroScale.SCALE_500DPS: 0.01750,
+            LSM9DS1.GyroScale.SCALE_2000DPS: 0.07000
         }
 
     @property
@@ -237,7 +247,7 @@ class LSM9DS1:
         """
 
         gain = self._bus_mag.read_byte(Registers.CTRL_REG2_M.value)
-        gain = (gain & 0x60) & 0xFF
+        gain = (gain & ~0x60) & 0xFF
         gain |= value.value
 
         self._bus_mag.write_byte(Registers.CTRL_REG2_M.value, gain)
@@ -267,7 +277,7 @@ class LSM9DS1:
         """
 
         scale = self._bus_acc.read_byte(Registers.CTRL_REG1_G.value)
-        scale = (scale & 0x18) & 0xFF
+        scale = (scale & ~0x18) & 0xFF
         scale |= value.value
 
         self._bus_acc.write_byte(Registers.CTRL_REG1_G.value, scale)
@@ -297,3 +307,16 @@ class LSM9DS1:
         mag_lsb = self._mag_lsb_map.get(self.mag_gain)
 
         return [x * mag_lsb / 1000.0 for x in mag]
+
+    def read_gyro(self):
+        """
+        Reads current gyroscope values are returns it as a list of 3 elements: wx, wy, wz (deg/s).
+
+        :return: current gyroscope readings
+        """
+
+        raw_gyro_value = self._bus_acc.read_bytes(0x80 | Registers.OUT_X_L_G.value)
+        gyro = struct.unpack_from('<hhh', struct.pack('BBBBBB', *raw_gyro_value[:6]))
+        gyro_lsb = self._gyro_lsb_map.get(self.gyro_scale)
+
+        return [x * gyro_lsb for x in gyro]
