@@ -118,22 +118,24 @@ class I2C(Bus):
 
 
 class LSM9DS1:
+    ACC_1G = 9.80665
+
     class AccRange(Enum):
-        RANGE_2G = (0b00 << 3)
-        RANGE_4G = (0b10 << 3)
-        RANGE_8G = (0b11 << 3)
-        RANGE_16G = (0b01 << 3)
+        RANGE_2G = 0b00 << 3
+        RANGE_4G = 0b10 << 3
+        RANGE_8G = 0b11 << 3
+        RANGE_16G = 0b01 << 3
 
     class MagGain(Enum):
-        GAIN_4GAUSS = (0b00 << 5)
-        GAIN_8GAUSS = (0b01 << 5)
-        GAIN_12GAUSS = (0b10 << 5)
-        GAIN_16GAUSS = (0b11 << 5)
+        GAIN_4GAUSS = 0b00 << 5
+        GAIN_8GAUSS = 0b01 << 5
+        GAIN_12GAUSS = 0b10 << 5
+        GAIN_16GAUSS = 0b11 << 5
 
     class GyroScale(Enum):
-        SCALE_245DPS = (0b00 << 3)
-        SCALE_500DPS = (0b01 << 3)
-        SCALE_2000DPS = (0b11 << 3)
+        SCALE_245DPS = 0b00 << 3
+        SCALE_500DPS = 0b01 << 3
+        SCALE_2000DPS = 0b11 << 3
 
     def _reset_acc(self):
         self._bus_acc.write_byte(Registers.CTRL_REG8.value, 0x05)
@@ -149,14 +151,6 @@ class LSM9DS1:
         self._bus_mag.write_byte(Registers.CTRL_REG3_M.value, 0x00)
 
     def __init__(self, bus_acc: Bus, bus_mag: Bus):
-        self._accel_mg_lsb = None
-        self._mag_mgauss_lsb = None
-        self._gyro_dps_digit = None
-
-        self._acc_range = LSM9DS1.AccRange.RANGE_2G.value
-        self._mag_gain = LSM9DS1.MagGain.GAIN_4GAUSS.value
-        self._gyro_scale = LSM9DS1.GyroScale.SCALE_245DPS.value
-
         self._bus_acc = bus_acc
         self._bus_mag = bus_mag
 
@@ -171,6 +165,20 @@ class LSM9DS1:
         self.acc_range = LSM9DS1.AccRange.RANGE_2G
         self.gyro_scale = LSM9DS1.GyroScale.SCALE_245DPS
         self.mag_gain = LSM9DS1.MagGain.GAIN_4GAUSS
+
+        self._acc_lsb_map = {
+            LSM9DS1.AccRange.RANGE_2G: 0.061,
+            LSM9DS1.AccRange.RANGE_4G: 0.122,
+            LSM9DS1.AccRange.RANGE_8G: 0.244,
+            LSM9DS1.AccRange.RANGE_16G: 0.732
+        }
+
+        self._mag_lsb_map = {
+            LSM9DS1.MagGain.GAIN_4GAUSS: 0.14,
+            LSM9DS1.MagGain.GAIN_8GAUSS: 0.29,
+            LSM9DS1.MagGain.GAIN_12GAUSS: 0.43,
+            LSM9DS1.MagGain.GAIN_16GAUSS: 0.58
+        }
 
     @property
     def acc_range(self) -> AccRange:
@@ -265,7 +273,27 @@ class LSM9DS1:
         self._bus_acc.write_byte(Registers.CTRL_REG1_G.value, scale)
 
     def read_acc(self):
-        value1 = self._bus_acc.read_bytes(0x80 | Registers.OUT_X_L_XL.value)
-        data = struct.unpack_from('<hhh', struct.pack('BBBBBB', *value1[:6]))
+        """
+        Reads current acceleration and returns it as a list of 3 elements: ax, ay, az (m/s^2).
 
-        return [x * 0.061 / 1000.0 * 9.80665 for x in data]
+        :return: current acceleration
+        """
+
+        raw_acc_value = self._bus_acc.read_bytes(0x80 | Registers.OUT_X_L_XL.value)
+        acc = struct.unpack_from('<hhh', struct.pack('BBBBBB', *raw_acc_value[:6]))
+        acc_lsb = self._acc_lsb_map.get(self.acc_range)
+
+        return [x * acc_lsb / 1000.0 * LSM9DS1.ACC_1G for x in acc]
+
+    def read_mag(self):
+        """
+        Reads current magnetometer values are returns it as a list of 3 elements: mx, my, mz (gauss).
+
+        :return: current magnetometer readings
+        """
+
+        raw_mag_value = self._bus_mag.read_bytes(0x80 | Registers.OUT_X_L_M.value)
+        mag = struct.unpack_from('<hhh', struct.pack('BBBBBB', *raw_mag_value[:6]))
+        mag_lsb = self._mag_lsb_map.get(self.mag_gain)
+
+        return [x * mag_lsb / 1000.0 for x in mag]
